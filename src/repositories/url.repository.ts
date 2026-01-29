@@ -1,35 +1,45 @@
-type UrlRecord = {
-    id: number;
-    longUrl: string;
-    shortCode: string;
-    createdAt: Date;
-    expiresAt?: Date;
-    clickCount: number;
+import { prisma } from "../config/prisma";
+
+export type UrlRecord = {
+  id: number;
+  shortCode: string;
+  longUrl: string;
+  createdAt: Date;
+  expiresAt?: Date | null;
+  clickCount: number;
 };
 
-let currentId = 1;
-const urls: UrlRecord[] = [];
-
-export function createUrl(longUrl: string): UrlRecord {
-    const id = currentId++;
-    return {
-        id, 
-        longUrl,
-        shortCode: "",
-        createdAt: new Date(),
-        clickCount: 0,
-    };
+export async function createUrl(
+  longUrl: string,
+  shortCode: string,
+  userId?: number
+): Promise<UrlRecord> {
+  return prisma.url.create({
+    data: {
+      longUrl,
+      shortCode,
+      userId,
+    },
+  });
 }
 
-export function saveUrl(record: UrlRecord): UrlRecord {
-    urls.push(record);
-    return record;
+export async function findByShortCode(
+  shortCode: string
+): Promise<UrlRecord | null> {
+  return prisma.url.findUnique({
+    where: { shortCode },
+  });
 }
 
-export function findByShortCode(shortCode: string): UrlRecord | undefined {
-    return urls.find((u) => u.shortCode === shortCode);
-}
-
-export function incrementCounter(record: UrlRecord) {
-    record.clickCount += 1;
+export async function incrementClickCount(
+  shortCode: string
+): Promise<void> {
+  await prisma.url.update({
+    where: { shortCode },
+    data: {
+      clickCount: {
+        increment: 1,
+      },
+    },
+  });
 }
